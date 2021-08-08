@@ -6,25 +6,27 @@ import {
   QueryOptions
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
-import config from './config';
-
-const authLink = setContext((_, { headers }) => {
-  const token = config?.access_token ?? '';
-  return {
-    headers: {
-      ...headers,
-      authorization: token ? `Bearer ${token}` : '',
-    }
-  }
-});
 
 class ApolloClientWrapper {
   private uri: string;
   private client: ApolloClient<NormalizedCacheObject>;
 
-  constructor(uri) {
+  constructor({ host, pathname, token }) {
+    if (!host || !pathname || !token) {
+      throw new Error(
+        'ApolloClientWrapper requires host, pathname and token to initialize'
+      );
+    }
     const httpLink = createHttpLink({
-      uri
+      uri: `${host}${pathname}`
+    });
+    const authLink = setContext((_, { headers }) => {
+      return {
+        headers: {
+          ...headers,
+          authorization: token ? `Bearer ${token}` : '',
+        }
+      }
     });
     const cache = new InMemoryCache({});
     this.client = new ApolloClient({
